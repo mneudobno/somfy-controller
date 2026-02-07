@@ -63,8 +63,8 @@ static void somfy_rts_build_frame(
     checksum &= 0x0F;
     frame[1] |= checksum;
 
-    // Obfuscation: rolling XOR
-    for(int i = 6; i > 0; i--) {
+    // Obfuscation: forward rolling XOR
+    for(int i = 1; i < 7; i++) {
         frame[i] ^= frame[i - 1];
     }
 }

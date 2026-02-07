@@ -6,18 +6,21 @@ const AppSceneOnEnterCallback somfy_rts_scene_on_enter_handlers[] = {
     [SomfyRtsSceneMenu] = somfy_rts_scene_menu_on_enter,
     [SomfyRtsSceneControl] = somfy_rts_scene_control_on_enter,
     [SomfyRtsSceneAdd] = somfy_rts_scene_add_on_enter,
+    [SomfyRtsSceneConfirmDelete] = somfy_rts_scene_confirm_delete_on_enter,
 };
 
 const AppSceneOnEventCallback somfy_rts_scene_on_event_handlers[] = {
     [SomfyRtsSceneMenu] = somfy_rts_scene_menu_on_event,
     [SomfyRtsSceneControl] = somfy_rts_scene_control_on_event,
     [SomfyRtsSceneAdd] = somfy_rts_scene_add_on_event,
+    [SomfyRtsSceneConfirmDelete] = somfy_rts_scene_confirm_delete_on_event,
 };
 
 const AppSceneOnExitCallback somfy_rts_scene_on_exit_handlers[] = {
     [SomfyRtsSceneMenu] = somfy_rts_scene_menu_on_exit,
     [SomfyRtsSceneControl] = somfy_rts_scene_control_on_exit,
     [SomfyRtsSceneAdd] = somfy_rts_scene_add_on_exit,
+    [SomfyRtsSceneConfirmDelete] = somfy_rts_scene_confirm_delete_on_exit,
 };
 
 const SceneManagerHandlers somfy_rts_scene_handlers = {
@@ -55,14 +58,23 @@ static SomfyRtsApp* somfy_rts_app_alloc(void) {
     app->submenu = submenu_alloc();
     view_dispatcher_add_view(app->view_dispatcher, SomfyRtsViewMenu, submenu_get_view(app->submenu));
 
-    // Control view (custom raw view)
+    // Control view (custom raw view with app pointer as model)
     app->control_view = view_alloc();
+    view_allocate_model(app->control_view, ViewModelTypeLockFree, sizeof(SomfyRtsApp*));
+    SomfyRtsApp** model = view_get_model(app->control_view);
+    *model = app;
+    view_commit_model(app->control_view, false);
     view_dispatcher_add_view(app->view_dispatcher, SomfyRtsViewControl, app->control_view);
 
     // Text input (add blind scene)
     app->text_input = text_input_alloc();
     view_dispatcher_add_view(
         app->view_dispatcher, SomfyRtsViewTextInput, text_input_get_view(app->text_input));
+
+    // Dialog (confirm delete)
+    app->dialog_ex = dialog_ex_alloc();
+    view_dispatcher_add_view(
+        app->view_dispatcher, SomfyRtsViewConfirmDelete, dialog_ex_get_view(app->dialog_ex));
 
     // Load saved blinds
     somfy_rts_store_load(app);
@@ -74,10 +86,12 @@ static void somfy_rts_app_free(SomfyRtsApp* app) {
     view_dispatcher_remove_view(app->view_dispatcher, SomfyRtsViewMenu);
     view_dispatcher_remove_view(app->view_dispatcher, SomfyRtsViewControl);
     view_dispatcher_remove_view(app->view_dispatcher, SomfyRtsViewTextInput);
+    view_dispatcher_remove_view(app->view_dispatcher, SomfyRtsViewConfirmDelete);
 
     submenu_free(app->submenu);
     view_free(app->control_view);
     text_input_free(app->text_input);
+    dialog_ex_free(app->dialog_ex);
 
     scene_manager_free(app->scene_manager);
     view_dispatcher_free(app->view_dispatcher);
