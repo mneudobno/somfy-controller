@@ -1,0 +1,11 @@
+App(
+    appid="somfy_rts",
+    name="Somfy RTS",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="somfy_rts_app",
+    requires=["gui", "storage"],
+    stack_size=2 * 1024,
+    fap_category="Sub-GHz",
+    fap_icon="images/somfy_rts_10px.png",
+    fap_icon_assets="images",
+)
